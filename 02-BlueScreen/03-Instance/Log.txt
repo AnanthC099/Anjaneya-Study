@@ -22,6 +22,9 @@ FillInstanceExtensionNames(): VK_KHR_SURFACE_EXTENSION_NAME is found
 FillInstanceExtensionNames(): VK_KHR_WIN32_SURFACE_EXTENSION_NAME is found
 FillInstanceExtensionNames(): Enabled Vulkan Instance Extension Name = VK_KHR_surface
 FillInstanceExtensionNames(): Enabled Vulkan Instance Extension Name = VK_KHR_win32_surface
-WinMain(): FillInstanceExtensionNames() succedded
+CreateVulkanInstance(): FillInstanceExtensionNames() succedded
+CreateVulkanInstance(): vkCreateInstance() succedded
+initialize(): CreateVulkanInstance() succedded
 WinMain(): initialize() succedded
+uninitialize(): vkDestroyInstance() sucedded
 uninitialize()-> Program ended successfully.

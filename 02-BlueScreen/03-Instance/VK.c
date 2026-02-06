@@ -40,6 +40,9 @@ VK_KHR_WIN32_SURFACE_EXTENSION_NAME
 */
 const char* enabledInstanceExtensionNames_array[2];
 
+//Vulkan Instance
+VkInstance vkInstance = VK_NULL_HANDLE;
+
 // Entry-Point Function
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLine, int iCmdShow)
 {
@@ -101,7 +104,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 	// Create Window								// glutCreateWindow
 	hwnd = CreateWindowEx(WS_EX_APPWINDOW,			// to above of taskbar for fullscreen
 						szAppName,
-						TEXT("02_Instance_Extensions"),
+						TEXT("03_Instance"),
 						WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN | WS_CLIPSIBLINGS | WS_VISIBLE,
 						xCoordinate,				// glutWindowPosition 1st Parameter
 						yCoordinate,				// glutWindowPosition 2nd Parameter
@@ -283,23 +286,24 @@ void ToggleFullscreen(void)
 
 VkResult initialize(void)
 {
-	//Function declarations
-	VkResult FillInstanceExtensionNames(void);
-
+	//Function declaration
+	VkResult CreateVulkanInstance(void);
+	
 	//Variable declarations
 	VkResult vkResult = VK_SUCCESS;
-
+	
 	// Code
-	vkResult = FillInstanceExtensionNames();
+	vkResult = CreateVulkanInstance();
 	if (vkResult != VK_SUCCESS)
 	{
-		fprintf(gFILE, "WinMain(): FillInstanceExtensionNames()  function failed\n");
+		fprintf(gFILE, "initialize(): CreateVulkanInstance()  function failed\n");
 		return vkResult;
 	}
 	else
 	{
-		fprintf(gFILE, "WinMain(): FillInstanceExtensionNames() succedded\n");
+		fprintf(gFILE, "initialize(): CreateVulkanInstance() succedded\n");
 	}
+	
 
 	return vkResult;
 }
@@ -322,7 +326,6 @@ void update(void)
 	// Code
 }
 
-
 void uninitialize(void)
 {
 		// Function Declarations
@@ -342,6 +345,16 @@ void uninitialize(void)
 			ghwnd = NULL;
 		}
 
+		/*
+		Destroy VkInstance in uninitialize()
+		*/
+		if(vkInstance)
+		{
+			vkDestroyInstance(vkInstance, NULL); //https://registry.khronos.org/vulkan/specs/latest/man/html/vkDestroyInstance.html
+			vkInstance = VK_NULL_HANDLE;
+			fprintf(gFILE, "uninitialize(): vkDestroyInstance() sucedded\n");
+		}
+
 		// Close the log file
 		if (gFILE)
 		{
@@ -353,6 +366,92 @@ void uninitialize(void)
 }
 
 //Definition of Vulkan related functions
+
+VkResult CreateVulkanInstance(void)
+{
+	/*
+		As explained before fill and initialize required extension names and count in 2 respective global variables (Lasst 8 steps mhanje instance cha first step)
+	*/
+	//Function declarations
+	VkResult FillInstanceExtensionNames(void);
+	
+	//Variable declarations
+	VkResult vkResult = VK_SUCCESS;
+
+	// Code
+	vkResult = FillInstanceExtensionNames();
+	if (vkResult != VK_SUCCESS)
+	{
+		fprintf(gFILE, "CreateVulkanInstance(): FillInstanceExtensionNames()  function failed\n");
+		return vkResult;
+	}
+	else
+	{
+		fprintf(gFILE, "CreateVulkanInstance(): FillInstanceExtensionNames() succedded\n");
+	}
+	
+	/*
+	Initialize struct VkApplicationInfo (Somewhat limbu timbu)
+	*/
+	struct VkApplicationInfo vkApplicationInfo;
+	memset((void*)&vkApplicationInfo, 0, sizeof(struct VkApplicationInfo)); //Dont use ZeroMemory to keep parity across all OS
+	
+	//https://registry.khronos.org/vulkan/specs/latest/man/html/VkApplicationInfo.html/
+	vkApplicationInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO; //First member of all Vulkan structure, for genericness and typesafety
+	vkApplicationInfo.pNext = NULL;
+	vkApplicationInfo.pApplicationName = gpszAppName; //any string will suffice
+	vkApplicationInfo.applicationVersion = 1; //any number will suffice
+	vkApplicationInfo.pEngineName = gpszAppName; //any string will suffice
+	vkApplicationInfo.engineVersion = 1; //any number will suffice
+	/*
+	Mahatavacha aahe, 
+	on fly risk aahe Sir used VK_API_VERSION_1_3 as installed 1.3.296 version
+	Those using 1.4.304 must use VK_API_VERSION_1_4
+	*/
+	vkApplicationInfo.apiVersion = VK_API_VERSION_1_4; 
+	
+	/*
+	Initialize struct VkInstanceCreateInfo by using information from Step1 and Step2 (Important)
+	*/
+	struct VkInstanceCreateInfo vkInstanceCreateInfo;
+	memset((void*)&vkInstanceCreateInfo, 0, sizeof(struct VkInstanceCreateInfo));
+	
+	//https://registry.khronos.org/vulkan/specs/latest/man/html/VkInstanceCreateInfo.html
+	vkInstanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+	vkInstanceCreateInfo.pNext = NULL;
+	vkInstanceCreateInfo.pApplicationInfo = &vkApplicationInfo;
+	//folowing 2 members important
+	vkInstanceCreateInfo.enabledExtensionCount = enabledInstanceExtensionsCount;
+	vkInstanceCreateInfo.ppEnabledExtensionNames = enabledInstanceExtensionNames_array;
+	
+	/*
+	Call vkCreateInstance() to get VkInstance in a global variable and do error checking
+	*/
+	//https://registry.khronos.org/vulkan/specs/latest/man/html/vkCreateInstance.html
+	//2nd parameters is NULL as saying tuza memory allocator vapar , mazyakade custom memory allocator nahi
+	vkResult = vkCreateInstance(&vkInstanceCreateInfo, NULL, &vkInstance);
+	if (vkResult == VK_ERROR_INCOMPATIBLE_DRIVER)
+	{
+		fprintf(gFILE, "CreateVulkanInstance(): vkCreateInstance() function failed due to incompatible driver with error code %d\n", vkResult);
+		return vkResult;
+	}
+	else if (vkResult == VK_ERROR_EXTENSION_NOT_PRESENT)
+	{
+		fprintf(gFILE, "CreateVulkanInstance(): vkCreateInstance() function failed due to required extension not present with error code %d\n", vkResult);
+		return vkResult;
+	}
+	else if (vkResult != VK_SUCCESS)
+	{
+		fprintf(gFILE, "CreateVulkanInstance(): vkCreateInstance() function failed due to unknown reason with error code %d\n", vkResult);
+		return vkResult;
+	}
+	else
+	{
+		fprintf(gFILE, "CreateVulkanInstance(): vkCreateInstance() succedded\n");
+	}
+	
+	return vkResult;
+}
 
 VkResult FillInstanceExtensionNames(void)
 {
@@ -426,7 +525,7 @@ VkResult FillInstanceExtensionNames(void)
 		//Add log here later for success
 	}
 
-	for (uint32_t i = 0; i < instanceExtensionCount; i++)
+	for (uint32_t i =0; i < instanceExtensionCount; i++)
 	{
 		//https://registry.khronos.org/vulkan/specs/latest/man/html/VkExtensionProperties.html
 		instanceExtensionNames_array[i] = (char*)malloc( sizeof(char) * (strlen(vkExtensionProperties_array[i].extensionName) + 1));
