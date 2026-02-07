@@ -75,6 +75,10 @@ Vulkan Device
 */
 VkDevice vkDevice = VK_NULL_HANDLE; //https://registry.khronos.org/vulkan/specs/latest/man/html/VkDevice.html
 
+/*
+Device Queque
+*/
+VkQueue vkQueue =  VK_NULL_HANDLE; //https://registry.khronos.org/vulkan/specs/latest/man/html/VkQueue.html
 
 // Entry-Point Function
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLine, int iCmdShow)
@@ -325,13 +329,12 @@ VkResult initialize(void)
 	VkResult GetPhysicalDevice(void);
 	VkResult PrintVulkanInfo(void);
 	VkResult CreateVulKanDevice(void);
+	void GetDeviceQueque(void);
 	
 	//Variable declarations
 	VkResult vkResult = VK_SUCCESS;
-
-	//Code
-
-	//Create Vulkan Instance
+	
+	// Code
 	vkResult = CreateVulkanInstance();
 	if (vkResult != VK_SUCCESS)
 	{
@@ -342,7 +345,7 @@ VkResult initialize(void)
 	{
 		fprintf(gFILE, "initialize(): CreateVulkanInstance() succedded\n");
 	}
-
+	
 	//Create Vulkan Presentation Surface
 	vkResult = GetSupportedSurface();
 	if (vkResult != VK_SUCCESS)
@@ -391,6 +394,11 @@ VkResult initialize(void)
 		fprintf(gFILE, "initialize(): CreateVulKanDevice() succedded\n");
 	}
 	
+	//get Device Queque
+	GetDeviceQueque();
+	
+	fprintf(gFILE, "************************* End of initialize ******************************\n");
+	
 	return vkResult;
 }
 
@@ -431,6 +439,10 @@ void uninitialize(void)
 		}
 		
 		//Destroy Vulkan device
+		
+		//No need to destroy/uninitialize device queque
+		
+		//No need to destroy selected physical device
 		if(vkDevice)
 		{
 			vkDeviceWaitIdle(vkDevice); //First synchronization function
@@ -439,8 +451,6 @@ void uninitialize(void)
 			vkDevice = VK_NULL_HANDLE;
 			fprintf(gFILE, "uninitialize(): vkDestroyDevice() is done\n");
 		}
-		
-		//No need to destroy selected physical device
 		
 		if(vkSurfaceKHR)
 		{
@@ -596,10 +606,14 @@ VkResult FillInstanceExtensionNames(void)
 	*/
 	VkExtensionProperties* vkExtensionProperties_array = NULL;
 	vkExtensionProperties_array = (VkExtensionProperties*)malloc(sizeof(VkExtensionProperties) * instanceExtensionCount);
-	if (vkExtensionProperties_array == NULL)
+	if (vkExtensionProperties_array != NULL)
 	{
-		fprintf(gFILE, "FillInstanceExtensionNames(): malloc() failed for vkExtensionProperties_array\n");
-		return VK_ERROR_OUT_OF_HOST_MEMORY;
+		//Add log here later for failure
+		//exit(-1);
+	}
+	else
+	{
+		//Add log here later for success
 	}
 
 	vkResult = vkEnumerateInstanceExtensionProperties(NULL, &instanceExtensionCount, vkExtensionProperties_array);
@@ -618,11 +632,14 @@ VkResult FillInstanceExtensionNames(void)
 	*/
 	char** instanceExtensionNames_array = NULL;
 	instanceExtensionNames_array = (char**)malloc(sizeof(char*) * instanceExtensionCount);
-	if (instanceExtensionNames_array == NULL)
+	if (instanceExtensionNames_array != NULL)
 	{
-		fprintf(gFILE, "FillInstanceExtensionNames(): malloc() failed for instanceExtensionNames_array\n");
-		free(vkExtensionProperties_array);
-		return VK_ERROR_OUT_OF_HOST_MEMORY;
+		//Add log here later for failure
+		//exit(-1);
+	}
+	else
+	{
+		//Add log here later for success
 	}
 
 	for (uint32_t i =0; i < instanceExtensionCount; i++)
@@ -1152,10 +1169,14 @@ VkResult FillDeviceExtensionNames(void)
 	*/
 	VkExtensionProperties* vkExtensionProperties_array = NULL;
 	vkExtensionProperties_array = (VkExtensionProperties*)malloc(sizeof(VkExtensionProperties) * deviceExtensionCount);
-	if (vkExtensionProperties_array == NULL)
+	if (vkExtensionProperties_array != NULL)
 	{
-		fprintf(gFILE, "FillDeviceExtensionNames(): malloc() failed for vkExtensionProperties_array\n");
-		return VK_ERROR_OUT_OF_HOST_MEMORY;
+		//Add log here later for failure
+		//exit(-1);
+	}
+	else
+	{
+		//Add log here later for success
 	}
 
 	vkResult = vkEnumerateDeviceExtensionProperties(vkPhysicalDevice_selected, NULL, &deviceExtensionCount, vkExtensionProperties_array);
@@ -1174,11 +1195,14 @@ VkResult FillDeviceExtensionNames(void)
 	*/
 	char** deviceExtensionNames_array = NULL;
 	deviceExtensionNames_array = (char**)malloc(sizeof(char*) * deviceExtensionCount);
-	if (deviceExtensionNames_array == NULL)
+	if (deviceExtensionNames_array != NULL)
 	{
-		fprintf(gFILE, "FillDeviceExtensionNames(): malloc() failed for deviceExtensionNames_array\n");
-		free(vkExtensionProperties_array);
-		return VK_ERROR_OUT_OF_HOST_MEMORY;
+		//Add log here later for failure
+		//exit(-1);
+	}
+	else
+	{
+		//Add log here later for success
 	}
 
 	for (uint32_t i =0; i < deviceExtensionCount; i++)
@@ -1273,6 +1297,22 @@ VkResult CreateVulKanDevice(void)
 	}
 	
 	/*
+	Newly added code
+	*/
+	//float queuePriorities[1]  = {1.0};
+	float queuePriorities[1];
+	queuePriorities[0] = 1.0f;
+	VkDeviceQueueCreateInfo vkDeviceQueueCreateInfo; //https://registry.khronos.org/vulkan/specs/latest/man/html/VkDeviceQueueCreateInfo.html
+	memset(&vkDeviceQueueCreateInfo, 0, sizeof(VkDeviceQueueCreateInfo));
+	
+	vkDeviceQueueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+	vkDeviceQueueCreateInfo.pNext = NULL;
+	vkDeviceQueueCreateInfo.flags = 0;
+	vkDeviceQueueCreateInfo.queueFamilyIndex = graphicsQuequeFamilyIndex_selected;
+	vkDeviceQueueCreateInfo.queueCount = 1;
+	vkDeviceQueueCreateInfo.pQueuePriorities = queuePriorities;
+	
+	/*
 	3. Declare and initialize VkDeviceCreateInfo structure (https://registry.khronos.org/vulkan/specs/latest/man/html/VkDeviceCreateInfo.html).
 	*/
 	VkDeviceCreateInfo vkDeviceCreateInfo;
@@ -1289,6 +1329,8 @@ VkResult CreateVulKanDevice(void)
 	vkDeviceCreateInfo.enabledLayerCount = 0;
 	vkDeviceCreateInfo.ppEnabledLayerNames = NULL;
 	vkDeviceCreateInfo.pEnabledFeatures = NULL;
+	vkDeviceCreateInfo.queueCreateInfoCount = 1;
+	vkDeviceCreateInfo.pQueueCreateInfos = &vkDeviceQueueCreateInfo;
 	
 	/*
 	5. Now call vkCreateDevice to create actual Vulkan device and do error checking.
@@ -1305,6 +1347,21 @@ VkResult CreateVulKanDevice(void)
 	}
 	
 	return vkResult;
+}
+
+void GetDeviceQueque(void)
+{
+	//Code
+	vkGetDeviceQueue(vkDevice, graphicsQuequeFamilyIndex_selected, 0, &vkQueue); //https://registry.khronos.org/vulkan/specs/latest/man/html/vkGetDeviceQueue.html
+	if(vkQueue == VK_NULL_HANDLE)
+	{
+		fprintf(gFILE, "GetDeviceQueque(): vkGetDeviceQueue() returned NULL for vkQueue\n");
+		return;
+	}
+	else
+	{
+		fprintf(gFILE, "GetDeviceQueque(): vkGetDeviceQueue() succedded\n");
+	}
 }
 
 
