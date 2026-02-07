@@ -43,6 +43,12 @@ const char* enabledInstanceExtensionNames_array[2];
 //Vulkan Instance
 VkInstance vkInstance = VK_NULL_HANDLE;
 
+//Vulkan Presentation Surface
+/*
+Declare a global variable to hold presentation surface object
+*/
+VkSurfaceKHR vkSurfaceKHR = VK_NULL_HANDLE;
+
 // Entry-Point Function
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLine, int iCmdShow)
 {
@@ -104,7 +110,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 	// Create Window								// glutCreateWindow
 	hwnd = CreateWindowEx(WS_EX_APPWINDOW,			// to above of taskbar for fullscreen
 						szAppName,
-						TEXT("03_Instance"),
+						TEXT("04_PresentationSurface"),
 						WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN | WS_CLIPSIBLINGS | WS_VISIBLE,
 						xCoordinate,				// glutWindowPosition 1st Parameter
 						yCoordinate,				// glutWindowPosition 2nd Parameter
@@ -288,6 +294,7 @@ VkResult initialize(void)
 {
 	//Function declaration
 	VkResult CreateVulkanInstance(void);
+	VkResult GetSupportedSurface(void);
 	
 	//Variable declarations
 	VkResult vkResult = VK_SUCCESS;
@@ -296,12 +303,24 @@ VkResult initialize(void)
 	vkResult = CreateVulkanInstance();
 	if (vkResult != VK_SUCCESS)
 	{
-		fprintf(gFILE, "initialize(): CreateVulkanInstance()  function failed\n");
+		fprintf(gFILE, "initialize(): CreateVulkanInstance()  function failed with error code %d\n", vkResult);
 		return vkResult;
 	}
 	else
 	{
 		fprintf(gFILE, "initialize(): CreateVulkanInstance() succedded\n");
+	}
+	
+	//Create Vulkan Presentation Surface
+	vkResult = GetSupportedSurface();
+	if (vkResult != VK_SUCCESS)
+	{
+		fprintf(gFILE, "initialize(): GetSupportedSurface()  function failed with error code %d\n", vkResult);
+		return vkResult;
+	}
+	else
+	{
+		fprintf(gFILE, "initialize(): GetSupportedSurface() succedded\n", vkResult);
 	}
 	
 
@@ -343,6 +362,16 @@ void uninitialize(void)
 		{
 			DestroyWindow(ghwnd);
 			ghwnd = NULL;
+		}
+		
+		if(vkSurfaceKHR)
+		{
+			/*
+			The destroy() of vkDestroySurfaceKHR() generic not platform specific
+			*/
+			vkDestroySurfaceKHR(vkInstance, vkSurfaceKHR, NULL); //https://registry.khronos.org/vulkan/specs/latest/man/html/vkDestroySurfaceKHR.html
+			vkSurfaceKHR = VK_NULL_HANDLE;
+			fprintf(gFILE, "uninitialize(): vkDestroySurfaceKHR() sucedded\n");
 		}
 
 		/*
@@ -610,6 +639,45 @@ VkResult FillInstanceExtensionNames(void)
 		fprintf(gFILE, "FillInstanceExtensionNames(): Enabled Vulkan Instance Extension Name = %s\n", enabledInstanceExtensionNames_array[i]);
 	}
 
+	return vkResult;
+}
+
+VkResult GetSupportedSurface(void)
+{
+	//Variable declarations
+	VkResult vkResult = VK_SUCCESS;
+	
+	/*
+	Declare and memset a platform(Windows, Linux , Android etc) specific SurfaceInfoCreate structure
+	*/
+	VkWin32SurfaceCreateInfoKHR vkWin32SurfaceCreateInfoKHR;
+	memset((void*)&vkWin32SurfaceCreateInfoKHR, 0 , sizeof(struct VkWin32SurfaceCreateInfoKHR));
+	
+	/*
+	Initialize it , particularly its HINSTANCE and HWND members
+	*/
+	//https://registry.khronos.org/vulkan/specs/latest/man/html/VkWin32SurfaceCreateInfoKHR.html
+	vkWin32SurfaceCreateInfoKHR.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
+	vkWin32SurfaceCreateInfoKHR.pNext = NULL;
+	vkWin32SurfaceCreateInfoKHR.flags = 0;
+	vkWin32SurfaceCreateInfoKHR.hinstance = (HINSTANCE)GetWindowLongPtr(ghwnd, GWLP_HINSTANCE); //This member can also be initialized by using (HINSTANCE)GetModuleHandle(NULL); {typecasted HINSTANCE}
+	vkWin32SurfaceCreateInfoKHR.hwnd = ghwnd;
+	
+	/*
+	Now call VkCreateWin32SurfaceKHR() to create the presentation surface object
+	*/
+	//https://registry.khronos.org/vulkan/specs/latest/man/html/vkCreateWin32SurfaceKHR.html
+	vkResult = vkCreateWin32SurfaceKHR(vkInstance, &vkWin32SurfaceCreateInfoKHR, NULL, &vkSurfaceKHR);
+	if (vkResult != VK_SUCCESS)
+	{
+		fprintf(gFILE, "GetSupportedSurface(): vkCreateWin32SurfaceKHR()  function failed with error code %d\n", vkResult);
+		return vkResult;
+	}
+	else
+	{
+		fprintf(gFILE, "GetSupportedSurface(): vkCreateWin32SurfaceKHR() succedded\n");
+	}
+	
 	return vkResult;
 }
 
