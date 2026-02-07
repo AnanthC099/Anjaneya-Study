@@ -320,6 +320,7 @@ void ToggleFullscreen(void)
 VkResult initialize(void)
 {
 	//Function declaration
+	VkResult CreateVulkanInstance(void);
 	VkResult GetSupportedSurface(void);
 	VkResult GetPhysicalDevice(void);
 	VkResult PrintVulkanInfo(void);
@@ -329,7 +330,19 @@ VkResult initialize(void)
 	VkResult vkResult = VK_SUCCESS;
 
 	//Code
-	
+
+	//Create Vulkan Instance
+	vkResult = CreateVulkanInstance();
+	if (vkResult != VK_SUCCESS)
+	{
+		fprintf(gFILE, "initialize(): CreateVulkanInstance() function failed with error code %d\n", vkResult);
+		return vkResult;
+	}
+	else
+	{
+		fprintf(gFILE, "initialize(): CreateVulkanInstance() succedded\n");
+	}
+
 	//Create Vulkan Presentation Surface
 	vkResult = GetSupportedSurface();
 	if (vkResult != VK_SUCCESS)
@@ -583,14 +596,10 @@ VkResult FillInstanceExtensionNames(void)
 	*/
 	VkExtensionProperties* vkExtensionProperties_array = NULL;
 	vkExtensionProperties_array = (VkExtensionProperties*)malloc(sizeof(VkExtensionProperties) * instanceExtensionCount);
-	if (vkExtensionProperties_array != NULL)
+	if (vkExtensionProperties_array == NULL)
 	{
-		//Add log here later for failure
-		//exit(-1);
-	}
-	else
-	{
-		//Add log here later for success
+		fprintf(gFILE, "FillInstanceExtensionNames(): malloc() failed for vkExtensionProperties_array\n");
+		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
 	vkResult = vkEnumerateInstanceExtensionProperties(NULL, &instanceExtensionCount, vkExtensionProperties_array);
@@ -609,14 +618,11 @@ VkResult FillInstanceExtensionNames(void)
 	*/
 	char** instanceExtensionNames_array = NULL;
 	instanceExtensionNames_array = (char**)malloc(sizeof(char*) * instanceExtensionCount);
-	if (instanceExtensionNames_array != NULL)
+	if (instanceExtensionNames_array == NULL)
 	{
-		//Add log here later for failure
-		//exit(-1);
-	}
-	else
-	{
-		//Add log here later for success
+		fprintf(gFILE, "FillInstanceExtensionNames(): malloc() failed for instanceExtensionNames_array\n");
+		free(vkExtensionProperties_array);
+		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
 	for (uint32_t i =0; i < instanceExtensionCount; i++)
@@ -1146,14 +1152,10 @@ VkResult FillDeviceExtensionNames(void)
 	*/
 	VkExtensionProperties* vkExtensionProperties_array = NULL;
 	vkExtensionProperties_array = (VkExtensionProperties*)malloc(sizeof(VkExtensionProperties) * deviceExtensionCount);
-	if (vkExtensionProperties_array != NULL)
+	if (vkExtensionProperties_array == NULL)
 	{
-		//Add log here later for failure
-		//exit(-1);
-	}
-	else
-	{
-		//Add log here later for success
+		fprintf(gFILE, "FillDeviceExtensionNames(): malloc() failed for vkExtensionProperties_array\n");
+		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
 	vkResult = vkEnumerateDeviceExtensionProperties(vkPhysicalDevice_selected, NULL, &deviceExtensionCount, vkExtensionProperties_array);
@@ -1172,14 +1174,11 @@ VkResult FillDeviceExtensionNames(void)
 	*/
 	char** deviceExtensionNames_array = NULL;
 	deviceExtensionNames_array = (char**)malloc(sizeof(char*) * deviceExtensionCount);
-	if (deviceExtensionNames_array != NULL)
+	if (deviceExtensionNames_array == NULL)
 	{
-		//Add log here later for failure
-		//exit(-1);
-	}
-	else
-	{
-		//Add log here later for success
+		fprintf(gFILE, "FillDeviceExtensionNames(): malloc() failed for deviceExtensionNames_array\n");
+		free(vkExtensionProperties_array);
+		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
 	for (uint32_t i =0; i < deviceExtensionCount; i++)
