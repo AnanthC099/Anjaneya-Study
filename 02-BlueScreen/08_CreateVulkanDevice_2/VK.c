@@ -70,6 +70,11 @@ VK_KHR_SWAPCHAIN_EXTENSION_NAME
 */
 const char* enabledDeviceExtensionNames_array[1];
 
+/*
+Vulkan Device
+*/
+VkDevice vkDevice = VK_NULL_HANDLE; //https://registry.khronos.org/vulkan/specs/latest/man/html/VkDevice.html
+
 
 // Entry-Point Function
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLine, int iCmdShow)
@@ -319,12 +324,14 @@ VkResult initialize(void)
 	VkResult GetSupportedSurface(void);
 	VkResult GetPhysicalDevice(void);
 	VkResult PrintVulkanInfo(void);
-	VkResult FillDeviceExtensionNames(void);
+	VkResult CreateVulKanDevice(void);
 	
 	//Variable declarations
 	VkResult vkResult = VK_SUCCESS;
-	
-	// Code
+
+	//Code
+
+	//Create Vulkan Instance
 	vkResult = CreateVulkanInstance();
 	if (vkResult != VK_SUCCESS)
 	{
@@ -335,7 +342,7 @@ VkResult initialize(void)
 	{
 		fprintf(gFILE, "initialize(): CreateVulkanInstance() succedded\n");
 	}
-	
+
 	//Create Vulkan Presentation Surface
 	vkResult = GetSupportedSurface();
 	if (vkResult != VK_SUCCESS)
@@ -372,23 +379,20 @@ VkResult initialize(void)
 		fprintf(gFILE, "initialize(): PrintVulkanInfo() succedded\n");
 	}
 	
-	/*
-	fill device extensions
-	*/
-	vkResult = FillDeviceExtensionNames();
+	//Create Vulkan Device (Logical Device)
+	vkResult = CreateVulKanDevice(); 
 	if (vkResult != VK_SUCCESS)
 	{
-		fprintf(gFILE, "initialize(): FillDeviceExtensionNames()  function failed\n");
+		fprintf(gFILE, "initialize(): CreateVulKanDevice() function failed with error code %d\n", vkResult);
 		return vkResult;
 	}
 	else
 	{
-		fprintf(gFILE, "initialize(): FillDeviceExtensionNames() succedded\n");
+		fprintf(gFILE, "initialize(): CreateVulKanDevice() succedded\n");
 	}
 	
 	return vkResult;
 }
-
 
 void resize(int width, int height)
 {
@@ -424,6 +428,16 @@ void uninitialize(void)
 		{
 			DestroyWindow(ghwnd);
 			ghwnd = NULL;
+		}
+		
+		//Destroy Vulkan device
+		if(vkDevice)
+		{
+			vkDeviceWaitIdle(vkDevice); //First synchronization function
+			fprintf(gFILE, "uninitialize(): vkDeviceWaitIdle() is done\n");
+			vkDestroyDevice(vkDevice, NULL); //https://registry.khronos.org/vulkan/specs/latest/man/html/vkDestroyDevice.html
+			vkDevice = VK_NULL_HANDLE;
+			fprintf(gFILE, "uninitialize(): vkDestroyDevice() is done\n");
 		}
 		
 		//No need to destroy selected physical device
@@ -582,14 +596,10 @@ VkResult FillInstanceExtensionNames(void)
 	*/
 	VkExtensionProperties* vkExtensionProperties_array = NULL;
 	vkExtensionProperties_array = (VkExtensionProperties*)malloc(sizeof(VkExtensionProperties) * instanceExtensionCount);
-	if (vkExtensionProperties_array != NULL)
+	if (vkExtensionProperties_array == NULL)
 	{
-		//Add log here later for failure
-		//exit(-1);
-	}
-	else
-	{
-		//Add log here later for success
+		fprintf(gFILE, "FillInstanceExtensionNames(): malloc() failed for vkExtensionProperties_array\n");
+		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
 	vkResult = vkEnumerateInstanceExtensionProperties(NULL, &instanceExtensionCount, vkExtensionProperties_array);
@@ -608,14 +618,11 @@ VkResult FillInstanceExtensionNames(void)
 	*/
 	char** instanceExtensionNames_array = NULL;
 	instanceExtensionNames_array = (char**)malloc(sizeof(char*) * instanceExtensionCount);
-	if (instanceExtensionNames_array != NULL)
+	if (instanceExtensionNames_array == NULL)
 	{
-		//Add log here later for failure
-		//exit(-1);
-	}
-	else
-	{
-		//Add log here later for success
+		fprintf(gFILE, "FillInstanceExtensionNames(): malloc() failed for instanceExtensionNames_array\n");
+		free(vkExtensionProperties_array);
+		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
 	for (uint32_t i =0; i < instanceExtensionCount; i++)
@@ -1145,14 +1152,10 @@ VkResult FillDeviceExtensionNames(void)
 	*/
 	VkExtensionProperties* vkExtensionProperties_array = NULL;
 	vkExtensionProperties_array = (VkExtensionProperties*)malloc(sizeof(VkExtensionProperties) * deviceExtensionCount);
-	if (vkExtensionProperties_array != NULL)
+	if (vkExtensionProperties_array == NULL)
 	{
-		//Add log here later for failure
-		//exit(-1);
-	}
-	else
-	{
-		//Add log here later for success
+		fprintf(gFILE, "FillDeviceExtensionNames(): malloc() failed for vkExtensionProperties_array\n");
+		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
 	vkResult = vkEnumerateDeviceExtensionProperties(vkPhysicalDevice_selected, NULL, &deviceExtensionCount, vkExtensionProperties_array);
@@ -1171,14 +1174,11 @@ VkResult FillDeviceExtensionNames(void)
 	*/
 	char** deviceExtensionNames_array = NULL;
 	deviceExtensionNames_array = (char**)malloc(sizeof(char*) * deviceExtensionCount);
-	if (deviceExtensionNames_array != NULL)
+	if (deviceExtensionNames_array == NULL)
 	{
-		//Add log here later for failure
-		//exit(-1);
-	}
-	else
-	{
-		//Add log here later for success
+		fprintf(gFILE, "FillDeviceExtensionNames(): malloc() failed for deviceExtensionNames_array\n");
+		free(vkExtensionProperties_array);
+		return VK_ERROR_OUT_OF_HOST_MEMORY;
 	}
 
 	for (uint32_t i =0; i < deviceExtensionCount; i++)
@@ -1248,6 +1248,65 @@ VkResult FillDeviceExtensionNames(void)
 
 	return vkResult;
 }
+
+VkResult CreateVulKanDevice(void)
+{
+	//function declaration
+	VkResult FillDeviceExtensionNames(void);
+	
+	//Variable declarations
+	VkResult vkResult = VK_SUCCESS;
+	
+	/*
+	fill device extensions
+	2. Call previously created FillDeviceExtensionNames() in it.
+	*/
+	vkResult = FillDeviceExtensionNames();
+	if (vkResult != VK_SUCCESS)
+	{
+		fprintf(gFILE, "CreateVulKanDevice(): FillDeviceExtensionNames()  function failed\n");
+		return vkResult;
+	}
+	else
+	{
+		fprintf(gFILE, "CreateVulKanDevice(): FillDeviceExtensionNames() succedded\n");
+	}
+	
+	/*
+	3. Declare and initialize VkDeviceCreateInfo structure (https://registry.khronos.org/vulkan/specs/latest/man/html/VkDeviceCreateInfo.html).
+	*/
+	VkDeviceCreateInfo vkDeviceCreateInfo;
+	memset(&vkDeviceCreateInfo, 0, sizeof(VkDeviceCreateInfo));
+	
+	/*
+	4. Use previously obtained device extension count and device extension array to initialize this structure.
+	*/
+	vkDeviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+	vkDeviceCreateInfo.pNext = NULL;
+	vkDeviceCreateInfo.flags = 0;
+	vkDeviceCreateInfo.enabledExtensionCount = enabledDeviceExtensionsCount;
+	vkDeviceCreateInfo.ppEnabledExtensionNames = enabledDeviceExtensionNames_array;
+	vkDeviceCreateInfo.enabledLayerCount = 0;
+	vkDeviceCreateInfo.ppEnabledLayerNames = NULL;
+	vkDeviceCreateInfo.pEnabledFeatures = NULL;
+	
+	/*
+	5. Now call vkCreateDevice to create actual Vulkan device and do error checking.
+	*/
+	vkResult = vkCreateDevice(vkPhysicalDevice_selected, &vkDeviceCreateInfo, NULL, &vkDevice); //https://registry.khronos.org/vulkan/specs/latest/man/html/vkCreateDevice.html
+	if(vkResult != VK_SUCCESS)
+	{
+		fprintf(gFILE, "CreateVulKanDevice(): vkCreateDevice()  function failed\n");
+		return vkResult;
+	}
+	else
+	{
+		fprintf(gFILE, "CreateVulKanDevice(): vkCreateDevice() succedded\n");
+	}
+	
+	return vkResult;
+}
+
 
 
 
