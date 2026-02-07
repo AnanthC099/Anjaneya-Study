@@ -320,7 +320,6 @@ void ToggleFullscreen(void)
 VkResult initialize(void)
 {
 	//Function declaration
-	VkResult CreateVulkanInstance(void);
 	VkResult GetSupportedSurface(void);
 	VkResult GetPhysicalDevice(void);
 	VkResult PrintVulkanInfo(void);
@@ -328,18 +327,8 @@ VkResult initialize(void)
 	
 	//Variable declarations
 	VkResult vkResult = VK_SUCCESS;
-	
-	// Code
-	vkResult = CreateVulkanInstance();
-	if (vkResult != VK_SUCCESS)
-	{
-		fprintf(gFILE, "initialize(): CreateVulkanInstance() function failed with error code %d\n", vkResult);
-		return vkResult;
-	}
-	else
-	{
-		fprintf(gFILE, "initialize(): CreateVulkanInstance() succedded\n");
-	}
+
+	//Code
 	
 	//Create Vulkan Presentation Surface
 	vkResult = GetSupportedSurface();
@@ -429,8 +418,6 @@ void uninitialize(void)
 		}
 		
 		//Destroy Vulkan device
-		
-		//No need to destroy selected physical device
 		if(vkDevice)
 		{
 			vkDeviceWaitIdle(vkDevice); //First synchronization function
@@ -439,6 +426,8 @@ void uninitialize(void)
 			vkDevice = VK_NULL_HANDLE;
 			fprintf(gFILE, "uninitialize(): vkDestroyDevice() is done\n");
 		}
+		
+		//No need to destroy selected physical device
 		
 		if(vkSurfaceKHR)
 		{
